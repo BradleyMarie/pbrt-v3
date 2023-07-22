@@ -101,7 +101,7 @@ Spectrum PathIntegrator::Li(const RayDifferential &r, const Scene &scene,
         }
 
         // Terminate path if ray escaped or _maxDepth_ was reached
-        if (!foundIntersection || bounces >= maxDepth) break;
+        if (!foundIntersection) break;
 
         // Compute scattering functions and skip over medium boundaries
         isect.ComputeScatteringFunctions(ray, arena, true);
@@ -126,6 +126,8 @@ Spectrum PathIntegrator::Li(const RayDifferential &r, const Scene &scene,
             CHECK_GE(Ld.y(), 0.f);
             L += Ld;
         }
+
+        if (bounces >= maxDepth) break;
 
         // Sample BSDF to get new path direction
         Vector3f wo = -ray.d, wi;
