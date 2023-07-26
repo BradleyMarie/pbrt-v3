@@ -17321,13 +17321,14 @@ TEST(BSDFs, Fourier) {
     EXPECT_LT(err(bsdf.f(wo, wi).y(), 2.679294), .001);
 
     // Pdf
-    EXPECT_LT(err(bsdf.Pdf(wo, wi), 2.438230), .001);
-    EXPECT_LT(err(bsdf.Pdf(wi, wo), 2.503326), .001);
+    EXPECT_LT(err(bsdf.Pdf(wo, wi, Vector3f(0, 0, 1)), 2.438230), .001);
+    EXPECT_LT(err(bsdf.Pdf(wi, wo, Vector3f(0, 0, 1)), 2.503326), .001);
 
     // Sampling
     Vector3f w;
     Float pdf;
-    Spectrum fr = bsdf.Sample_f(wo, &w, Point2f(.1, .8), &pdf, nullptr);
+    Spectrum fr = bsdf.Sample_f(wo, &w, Vector3f(0, 0, 1), Point2f(.1, .8),
+                                &pdf, nullptr);
     EXPECT_LT(err(fr.y(), 2.596391), .001);
     EXPECT_LT(err(pdf, 1.855472), .001);
     EXPECT_LT(err(w.x, 0.539052), .001);
