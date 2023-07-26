@@ -137,7 +137,7 @@ Spectrum EstimateDirect(const Interaction &it, const Point2f &uScattering,
             scatteringPdf = p;
             VLOG(2) << "  medium p: " << p;
         }
-        if (!f.IsBlack()) {
+        if (!f.IsBlack() && scatteringPdf > 0) {
             // Compute effect of visibility for light source sample
             if (handleMedia) {
                 Li *= visibility.Tr(scene, sampler);
