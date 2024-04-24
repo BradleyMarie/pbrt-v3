@@ -384,11 +384,6 @@ class SampledSpectrum : public CoefficientSpectrum<nSpectralSamples> {
             xyz[1] += Y.c[i] * c[i];
             xyz[2] += Z.c[i] * c[i];
         }
-        Float scale = Float(sampledLambdaEnd - sampledLambdaStart) /
-                      Float(CIE_Y_integral * nSpectralSamples);
-        xyz[0] *= scale;
-        xyz[1] *= scale;
-        xyz[2] *= scale;
     }
     Float y() const {
         Float yy = 0.f;
