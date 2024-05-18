@@ -139,6 +139,8 @@ Spectrum SpecularReflection::Sample_f(const Vector3f &wo, Vector3f *wi,
                                       Float *pdf, BxDFType *sampledType) const {
     // Compute perfect specular reflection direction
     *wi = Vector3f(-wo.x, -wo.y, wo.z);
+    if (Dot(wo, n) * Dot(*wi, n) < 0)
+        return 0;
     *pdf = 1;
     return fresnel->Evaluate(CosTheta(*wi)) * R / AbsCosTheta(*wi);
 }
@@ -159,6 +161,8 @@ Spectrum SpecularTransmission::Sample_f(const Vector3f &wo, Vector3f *wi,
 
     // Compute ray direction for specular transmission
     if (!Refract(wo, Faceforward(Normal3f(0, 0, 1), wo), etaI / etaT, wi))
+        return 0;
+    if (Dot(wo, n) * Dot(*wi, n) > 0)
         return 0;
     *pdf = 1;
     Spectrum ft = T * (Spectrum(1.) - fresnel.Evaluate(CosTheta(*wi)));
@@ -518,6 +522,8 @@ Spectrum FresnelSpecular::Sample_f(const Vector3f &wo, Vector3f *wi,
 
         // Compute perfect specular reflection direction
         *wi = Vector3f(-wo.x, -wo.y, wo.z);
+        if (Dot(wo, n) * Dot(*wi, n) < 0)
+            return 0;
         if (sampledType)
             *sampledType = BxDFType(BSDF_SPECULAR | BSDF_REFLECTION);
         *pdf = F;
@@ -532,6 +538,8 @@ Spectrum FresnelSpecular::Sample_f(const Vector3f &wo, Vector3f *wi,
 
         // Compute ray direction for specular transmission
         if (!Refract(wo, Faceforward(Normal3f(0, 0, 1), wo), etaI / etaT, wi))
+            return 0;
+        if (Dot(wo, n) * Dot(*wi, n) > 0)
             return 0;
         Spectrum ft = T * (1 - F);
 
