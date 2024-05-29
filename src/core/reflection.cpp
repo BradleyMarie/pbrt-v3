@@ -399,13 +399,7 @@ Spectrum BxDF::Sample_f(const Vector3f &wo, Vector3f *wi, const Vector3f &n,
 
 Float BxDF::Pdf(const Vector3f &wo, const Vector3f &wi,
                 const Vector3f &n) const {
-    Vector3f i = wi;
-    if (SameHemisphere(wo, i)) {
-      if (Dot(wo, n) * Dot(i, n) < 0) i = -i;
-    } else {
-      if (Dot(wo, n) * Dot(i, n) > 0) i = -i;
-    }
-    return SameHemisphere(wo, i) ? AbsCosTheta(i) * InvPi : 0;
+    return (Dot(wo, n) * Dot(wi, n) > 0) ? AbsCosTheta(wi) * InvPi : 0;
 }
 
 Spectrum LambertianTransmission::Sample_f(const Vector3f &wo, Vector3f *wi,
@@ -421,13 +415,7 @@ Spectrum LambertianTransmission::Sample_f(const Vector3f &wo, Vector3f *wi,
 
 Float LambertianTransmission::Pdf(const Vector3f &wo, const Vector3f &wi,
                                   const Vector3f &n) const {
-    Vector3f i = wi;
-    if (SameHemisphere(wo, i)) {
-      if (Dot(wo, n) * Dot(i, n) < 0) i = -i;
-    } else {
-      if (Dot(wo, n) * Dot(i, n) > 0) i = -i;
-    }
-    return !SameHemisphere(wo, i) ? AbsCosTheta(i) * InvPi : 0;
+    return (Dot(wo, n) * Dot(wi, n) < 0) ? AbsCosTheta(wi) * InvPi : 0;
 }
 
 Spectrum MicrofacetReflection::Sample_f(const Vector3f &wo, Vector3f *wi,
