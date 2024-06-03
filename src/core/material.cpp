@@ -48,7 +48,7 @@ void Material::Bump(const std::shared_ptr<Texture<Float>> &d,
     // Skip bump mapping if both du and dv are zero
     Float du = .5f * (std::abs(si->dudx) + std::abs(si->dudy));
     Float dv = .5f * (std::abs(si->dvdx) + std::abs(si->dvdy));
-    if (du == 0.0 && dv == 0.0) {
+    if (du == 0.0 || dv == 0.0) {
       return;
     }
 
