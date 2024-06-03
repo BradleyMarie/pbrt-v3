@@ -58,25 +58,19 @@ void Material::Bump(const std::shared_ptr<Texture<Float>> &d,
     // Shift _siEval_ _du_ in the $u$ direction
     siEval.p = si->p + du * si->shading.dpdu;
     siEval.uv = si->uv + Vector2f(du, 0.f);
-    siEval.n = Normalize((Normal3f)Cross(si->shading.dpdu, si->shading.dpdv) +
-                         du * si->dndu);
     Float uDisplace = d->Evaluate(siEval);
 
     // Shift _siEval_ _dv_ in the $v$ direction
     siEval.p = si->p + dv * si->shading.dpdv;
     siEval.uv = si->uv + Vector2f(0.f, dv);
-    siEval.n = Normalize((Normal3f)Cross(si->shading.dpdu, si->shading.dpdv) +
-                         dv * si->dndv);
     Float vDisplace = d->Evaluate(siEval);
     Float displace = d->Evaluate(*si);
 
     // Compute bump-mapped differential geometry
     Vector3f dpdu = si->shading.dpdu +
-                    (uDisplace - displace) / du * Vector3f(si->shading.n) +
-                    displace * Vector3f(si->shading.dndu);
+                    (uDisplace - displace) / du * Vector3f(si->shading.n);
     Vector3f dpdv = si->shading.dpdv +
-                    (vDisplace - displace) / dv * Vector3f(si->shading.n) +
-                    displace * Vector3f(si->shading.dndv);
+                    (vDisplace - displace) / dv * Vector3f(si->shading.n);
     si->SetShadingGeometry(dpdu, dpdv, si->shading.dndu, si->shading.dndv,
                            false);
 }
