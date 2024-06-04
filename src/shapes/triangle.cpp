@@ -365,17 +365,14 @@ bool Triangle::Intersect(const Ray &ray, Float *tHit, SurfaceInteraction *isect,
         Vector3f ss;
         if (mesh->s) {
             ss = (b0 * mesh->s[v[0]] + b1 * mesh->s[v[1]] + b2 * mesh->s[v[2]]);
-            if (ss.LengthSquared() > 0)
-                ss = Normalize(ss);
-            else
-                ss = Normalize(isect->dpdu);
+            if (ss.LengthSquared() == 0)
+                ss = isect->dpdu;
         } else
-            ss = Normalize(isect->dpdu);
+            ss = isect->dpdu;
 
         // Compute shading bitangent _ts_ for triangle and adjust _ss_
         Vector3f ts = Cross(ss, ns);
         if (ts.LengthSquared() > 0.f) {
-            ts = Normalize(ts);
             ss = Cross(ts, ns);
         } else
             CoordinateSystem((Vector3f)ns, &ss, &ts);
@@ -415,7 +412,7 @@ bool Triangle::Intersect(const Ray &ray, Float *tHit, SurfaceInteraction *isect,
         } else
             dndu = dndv = Normal3f(0, 0, 0);
         if (reverseOrientation) ts = -ts;
-        isect->SetShadingGeometry(ss, ts, dndu, dndv, true);
+        isect->SetShadingGeometry(ns, ss, ts, dndu, dndv, true);
     }
 
     *tHit = t;

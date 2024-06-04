@@ -124,8 +124,9 @@ class SurfaceInteraction : public Interaction {
                        const Normal3f &dndu, const Normal3f &dndv, Float time,
                        const Shape *sh,
                        int faceIndex = 0);
-    void SetShadingGeometry(const Vector3f &dpdu, const Vector3f &dpdv,
-                            const Normal3f &dndu, const Normal3f &dndv,
+    void SetShadingGeometry(const Normal3f &ns, const Vector3f &dpdu,
+                            const Vector3f &dpdv, const Normal3f &dndu,
+                            const Normal3f &dndv,
                             bool orientationIsAuthoritative);
     void ComputeScatteringFunctions(
         const RayDifferential &ray, MemoryArena &arena,
