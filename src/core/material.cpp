@@ -71,7 +71,9 @@ void Material::Bump(const std::shared_ptr<Texture<Float>> &d,
                     (uDisplace - displace) / du * Vector3f(si->shading.n);
     Vector3f dpdv = si->shading.dpdv +
                     (vDisplace - displace) / dv * Vector3f(si->shading.n);
-    si->SetShadingGeometry(dpdu, dpdv, si->shading.dndu, si->shading.dndv,
+    Normal3f ns(Normalize(Cross(dpdu, dpdv)));
+
+    si->SetShadingGeometry(ns, dpdu, dpdv, si->shading.dndu, si->shading.dndv,
                            false);
 }
 

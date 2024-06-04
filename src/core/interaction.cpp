@@ -70,13 +70,14 @@ SurfaceInteraction::SurfaceInteraction(
     }
 }
 
-void SurfaceInteraction::SetShadingGeometry(const Vector3f &dpdus,
+void SurfaceInteraction::SetShadingGeometry(const Normal3f &ns,
+                                            const Vector3f &dpdus,
                                             const Vector3f &dpdvs,
                                             const Normal3f &dndus,
                                             const Normal3f &dndvs,
                                             bool orientationIsAuthoritative) {
     // Compute _shading.n_ for _SurfaceInteraction_
-    shading.n = Normalize((Normal3f)Cross(dpdus, dpdvs));
+    shading.n = ns;
     if (orientationIsAuthoritative)
         n = Faceforward(n, shading.n);
     else
