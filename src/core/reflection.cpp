@@ -105,6 +105,17 @@ Spectrum ScaledBxDF::Sample_f(const Vector3f &wo, Vector3f *wi,
     return scale * f;
 }
 
+Spectrum ScaledBxDF::Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                              const Vector3f &wo_ry, Vector3f *wi,
+                              Vector3f *wi_rx, Vector3f *wi_ry,
+                              const Vector3f &n, const Point2f &sample,
+                              Float *pdf, bool *has_derivatives,
+                              BxDFType *sampledType) const {
+    Spectrum f = Sample_f(wo, wo_rx, wo_ry, wi, wi_rx, wi_ry, n, sample, pdf,
+                          has_derivatives, sampledType);
+    return scale * f;
+}
+
 Float ScaledBxDF::Pdf(const Vector3f &wo, const Vector3f &wi,
                       const Vector3f &n) const {
     return bxdf->Pdf(wo, wi, n);
@@ -145,6 +156,21 @@ Spectrum SpecularReflection::Sample_f(const Vector3f &wo, Vector3f *wi,
     return fresnel->Evaluate(CosTheta(*wi)) * R / AbsCosTheta(*wi);
 }
 
+Spectrum SpecularReflection::Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                                      const Vector3f &wo_ry, Vector3f *wi,
+                                      Vector3f *wi_rx, Vector3f *wi_ry,
+                                      const Vector3f &n, const Point2f &sample,
+                                      Float *pdf, bool *has_derivatives,
+                                      BxDFType *sampledType) const {
+    if (!Sample_f(wo_rx, wi_rx, n, sample, pdf, sampledType).IsBlack() && 
+        !Sample_f(wo_ry, wi_ry, n, sample, pdf, sampledType).IsBlack()) {
+        *has_derivatives = true;
+    } else {
+        *has_derivatives = false;
+    }
+    return Sample_f(wo, wi, n, sample, pdf, sampledType);
+}
+
 std::string SpecularReflection::ToString() const {
     return std::string("[ SpecularReflection R: ") + R.ToString() +
            std::string(" fresnel: ") + fresnel->ToString() + std::string(" ]");
@@ -169,6 +195,20 @@ Spectrum SpecularTransmission::Sample_f(const Vector3f &wo, Vector3f *wi,
     // Account for non-symmetry with transmission to different medium
     if (mode == TransportMode::Radiance) ft *= (etaI * etaI) / (etaT * etaT);
     return ft / AbsCosTheta(*wi);
+}
+
+Spectrum SpecularTransmission::Sample_f(
+    const Vector3f &wo, const Vector3f &wo_rx, const Vector3f &wo_ry,
+    Vector3f *wi, Vector3f *wi_rx, Vector3f *wi_ry, const Vector3f &n,
+    const Point2f &sample, Float *pdf, bool *has_derivatives,
+    BxDFType *sampledType) const {
+    if (!Sample_f(wo_rx, wi_rx, n, sample, pdf, sampledType).IsBlack() && 
+        !Sample_f(wo_ry, wi_ry, n, sample, pdf, sampledType).IsBlack()) {
+        *has_derivatives = true;
+    } else {
+        *has_derivatives = false;
+    }
+    return Sample_f(wo, wi, n, sample, pdf, sampledType);
 }
 
 std::string SpecularTransmission::ToString() const {
@@ -397,6 +437,15 @@ Spectrum BxDF::Sample_f(const Vector3f &wo, Vector3f *wi, const Vector3f &n,
     return f(wo, *wi);
 }
 
+Spectrum BxDF::Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                        const Vector3f &wo_ry, Vector3f *wi, Vector3f *wi_rx,
+                        Vector3f *wi_ry, const Vector3f &n,
+                        const Point2f &sample, Float *pdf,
+                        bool *has_derivatives, BxDFType *sampledType) const {
+    *has_derivatives = false;
+    return Sample_f(wo, wi, n, sample, pdf, sampledType);
+}
+
 Float BxDF::Pdf(const Vector3f &wo, const Vector3f &wi,
                 const Vector3f &n) const {
     return (Dot(wo, n) * Dot(wi, n) > 0) ? AbsCosTheta(wi) * InvPi : 0;
@@ -539,6 +588,30 @@ Spectrum FresnelSpecular::Sample_f(const Vector3f &wo, Vector3f *wi,
         *pdf = 1 - F;
         return ft / AbsCosTheta(*wi);
     }
+}
+
+Spectrum FresnelSpecular::Sample_f(
+    const Vector3f &wo, const Vector3f &wo_rx, const Vector3f &wo_ry,
+    Vector3f *wi, Vector3f *wi_rx, Vector3f *wi_ry, const Vector3f &n,
+    const Point2f &u, Float *pdf, bool *has_derivatives,
+    BxDFType *sampledType) const {
+    Float F = FrDielectric(CosTheta(wo), etaA, etaB);
+
+    Point2f uRemapped = u;
+    if (u[0] < F) {
+        uRemapped[0] = -1.0;
+    } else {
+        uRemapped[0] = 2.0;
+    }
+
+    if (!Sample_f(wo_rx, wi_rx, n, uRemapped, pdf, sampledType).IsBlack() && 
+        !Sample_f(wo_ry, wi_ry, n, uRemapped, pdf, sampledType).IsBlack()) {
+        *has_derivatives = true;
+    } else {
+        *has_derivatives = false;
+    }
+
+    return Sample_f(wo, wi, n, uRemapped, pdf, sampledType);
 }
 
 std::string FresnelSpecular::ToString() const {
@@ -741,6 +814,17 @@ Spectrum BSDF::rho(const Vector3f &woWorld, int nSamples, const Point2f *samples
 Spectrum BSDF::Sample_f(const Vector3f &woWorld, Vector3f *wiWorld,
                         const Point2f &u, Float *pdf, BxDFType type,
                         BxDFType *sampledType) const {
+    bool has_derivatives;
+    Vector3f wi_rx, wi_ry;
+    return Sample_f(woWorld, woWorld, woWorld, wiWorld, &wi_rx, &wi_ry, u, pdf,
+                    &has_derivatives, type, sampledType);
+}
+
+Spectrum BSDF::Sample_f(const Vector3f &woWorld, const Vector3f &woWorldRx,
+                        const Vector3f &woWorldRy, Vector3f *wiWorld,
+                        Vector3f *wiWorldRx, Vector3f *wiWorldRy,
+                        const Point2f &u, Float *pdf, bool *has_derivatives,
+                        BxDFType type, BxDFType *sampledType) const {
     ProfilePhase pp(Prof::BSDFSampling);
     // Choose which _BxDF_ to sample
     int matchingComps = NumComponents(type);
@@ -769,11 +853,14 @@ Spectrum BSDF::Sample_f(const Vector3f &woWorld, Vector3f *wiWorld,
                       u[1]);
 
     // Sample chosen _BxDF_
-    Vector3f wi, wo = WorldToLocal(woWorld), n = WorldToLocal(Vector3f(ng));
+    Vector3f wi, wi_rx, wi_ry,
+        wo = WorldToLocal(woWorld), wo_rx = WorldToLocal(woWorldRx),
+        wo_ry = WorldToLocal(woWorldRy), n = WorldToLocal(Vector3f(ng));
     if (wo.z == 0) return 0.;
     *pdf = 0;
     if (sampledType) *sampledType = bxdf->type;
-    Spectrum f = bxdf->Sample_f(wo, &wi, n, uRemapped, pdf, sampledType);
+    Spectrum f = bxdf->Sample_f(wo, wo_rx, wo_ry, &wi, &wi_rx, &wi_ry, n,
+                                uRemapped, pdf, has_derivatives, sampledType);
     VLOG(2) << "For wo = " << wo << ", sampled f = " << f << ", pdf = "
             << *pdf << ", ratio = " << ((*pdf > 0) ? (f / *pdf) : Spectrum(0.))
             << ", wi = " << wi;
@@ -782,6 +869,10 @@ Spectrum BSDF::Sample_f(const Vector3f &woWorld, Vector3f *wiWorld,
         return 0;
     }
     *wiWorld = LocalToWorld(wi);
+    if (*has_derivatives) {
+        *wiWorldRx = LocalToWorld(wi_rx);
+        *wiWorldRy = LocalToWorld(wi_ry);
+    }
 
     // Compute overall PDF with all matching _BxDF_s
     if (!(bxdf->type & BSDF_SPECULAR) && matchingComps > 1)
