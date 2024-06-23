@@ -130,11 +130,20 @@ Spectrum PathIntegrator::Li(const RayDifferential &r, const Scene &scene,
         if (bounces >= maxDepth) break;
 
         // Sample BSDF to get new path direction
-        Vector3f wo = -ray.d, wi;
+        Vector3f wo = -ray.d, wi, wi_rx, wi_ry;
         Float pdf;
         BxDFType flags;
-        Spectrum f = isect.bsdf->Sample_f(wo, &wi, sampler.Get2D(), &pdf,
-                                          BSDF_ALL, &flags);
+        bool wo_has_derivatives;
+        Spectrum f;
+        if (!ray.hasDifferentials) {
+            f = isect.bsdf->Sample_f(wo, &wi, sampler.Get2D(), &pdf, BSDF_ALL,
+                                     &flags);
+            wo_has_derivatives = false;
+        } else {
+            f = isect.bsdf->Sample_f(wo, -ray.rxDirection, -ray.ryDirection,
+                                     &wi, &wi_rx, &wi_ry, sampler.Get2D(), &pdf,
+                                     &wo_has_derivatives, BSDF_ALL, &flags);
+        }
         VLOG(2) << "Sampled BSDF, f = " << f << ", pdf = " << pdf;
         if (f.IsBlack() || pdf == 0.f) break;
         beta *= f * AbsDot(wi, isect.shading.n) / pdf;
@@ -149,7 +158,15 @@ Spectrum PathIntegrator::Li(const RayDifferential &r, const Scene &scene,
             // medium.
             etaScale *= (Dot(wo, isect.n) > 0) ? (eta * eta) : 1 / (eta * eta);
         }
-        ray = isect.SpawnRay(wi);
+        RayDifferential rd = isect.SpawnRay(wi);
+        if (wo_has_derivatives) {
+            rd.rxOrigin = isect.p + isect.dpdx;
+            rd.ryOrigin = isect.p + isect.dpdy;
+            rd.rxDirection = wi_rx;
+            rd.ryDirection = wi_ry;
+            rd.hasDifferentials = true;
+        }
+        ray = rd;
 
         // Account for subsurface scattering, if applicable
         if (isect.bssrdf && (flags & BSDF_TRANSMISSION)) {

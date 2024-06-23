@@ -39,9 +39,9 @@
 #define PBRT_CORE_REFLECTION_H
 
 // core/reflection.h*
-#include "pbrt.h"
 #include "geometry.h"
 #include "microfacet.h"
+#include "pbrt.h"
 #include "shape.h"
 #include "spectrum.h"
 
@@ -85,8 +85,7 @@ inline Float Sin2Phi(const Vector3f &w) { return SinPhi(w) * SinPhi(w); }
 inline Float CosDPhi(const Vector3f &wa, const Vector3f &wb) {
     Float waxy = wa.x * wa.x + wa.y * wa.y;
     Float wbxy = wb.x * wb.x + wb.y * wb.y;
-    if (waxy == 0 || wbxy == 0)
-        return 1;
+    if (waxy == 0 || wbxy == 0) return 1;
     return Clamp((wa.x * wb.x + wa.y * wb.y) / std::sqrt(waxy * wbxy), -1, 1);
 }
 
@@ -192,6 +191,11 @@ class BSDF {
     Spectrum Sample_f(const Vector3f &wo, Vector3f *wi, const Point2f &u,
                       Float *pdf, BxDFType type = BSDF_ALL,
                       BxDFType *sampledType = nullptr) const;
+    Spectrum Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                      const Vector3f &wo_ry, Vector3f *wi, Vector3f *wi_rx,
+                      Vector3f *wi_ry, const Point2f &u, Float *pdf,
+                      bool *has_derivatives, BxDFType type = BSDF_ALL,
+                      BxDFType *sampledType = nullptr) const;
     Float Pdf(const Vector3f &wo, const Vector3f &wi,
               BxDFType flags = BSDF_ALL) const;
     std::string ToString() const;
@@ -229,9 +233,15 @@ class BxDF {
                               const Vector3f &n, const Point2f &sample,
                               Float *pdf,
                               BxDFType *sampledType = nullptr) const;
+    virtual Spectrum Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                              const Vector3f &wo_ry, Vector3f *wi,
+                              Vector3f *wi_rx, Vector3f *wi_ry,
+                              const Vector3f &n, const Point2f &sample,
+                              Float *pdf, bool *has_derivatives,
+                              BxDFType *sampledType = nullptr) const;
     virtual Spectrum rho(const Vector3f &wo, const Vector3f &n, int nSamples,
                          const Point2f *samples) const;
-    virtual Spectrum rho( const Vector3f &n, int nSamples,
+    virtual Spectrum rho(const Vector3f &n, int nSamples,
                          const Point2f *samples1,
                          const Point2f *samples2) const;
     virtual Float Pdf(const Vector3f &wo, const Vector3f &wi,
@@ -263,6 +273,11 @@ class ScaledBxDF : public BxDF {
     Spectrum f(const Vector3f &wo, const Vector3f &wi) const;
     Spectrum Sample_f(const Vector3f &wo, Vector3f *wi, const Vector3f &n,
                       const Point2f &sample, Float *pdf,
+                      BxDFType *sampledType) const;
+    Spectrum Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                      const Vector3f &wo_ry, Vector3f *wi, Vector3f *wi_rx,
+                      Vector3f *wi_ry, const Vector3f &n, const Point2f &sample,
+                      Float *pdf, bool *has_derivatives,
                       BxDFType *sampledType) const;
     Float Pdf(const Vector3f &wo, const Vector3f &wi, const Vector3f &n) const;
     std::string ToString() const;
@@ -328,7 +343,12 @@ class SpecularReflection : public BxDF {
     Spectrum Sample_f(const Vector3f &wo, Vector3f *wi, const Vector3f &n,
                       const Point2f &sample, Float *pdf,
                       BxDFType *sampledType) const;
-    Float Pdf(const Vector3f &wo, const Vector3f &wi, const Vector3f &n) const { 
+    Spectrum Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                      const Vector3f &wo_ry, Vector3f *wi, Vector3f *wi_rx,
+                      Vector3f *wi_ry, const Vector3f &n, const Point2f &sample,
+                      Float *pdf, bool *has_derivatives,
+                      BxDFType *sampledType) const;
+    Float Pdf(const Vector3f &wo, const Vector3f &wi, const Vector3f &n) const {
         return 0;
     }
     std::string ToString() const;
@@ -355,6 +375,11 @@ class SpecularTransmission : public BxDF {
     }
     Spectrum Sample_f(const Vector3f &wo, Vector3f *wi, const Vector3f &n,
                       const Point2f &sample, Float *pdf,
+                      BxDFType *sampledType) const;
+    Spectrum Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                      const Vector3f &wo_ry, Vector3f *wi, Vector3f *wi_rx,
+                      Vector3f *wi_ry, const Vector3f &n, const Point2f &sample,
+                      Float *pdf, bool *has_derivatives,
                       BxDFType *sampledType) const;
     Float Pdf(const Vector3f &wo, const Vector3f &wi, const Vector3f &n) const {
         return 0;
@@ -385,6 +410,11 @@ class FresnelSpecular : public BxDF {
     }
     Spectrum Sample_f(const Vector3f &wo, Vector3f *wi, const Vector3f &n,
                       const Point2f &u, Float *pdf,
+                      BxDFType *sampledType) const;
+    Spectrum Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
+                      const Vector3f &wo_ry, Vector3f *wi, Vector3f *wi_rx,
+                      Vector3f *wi_ry, const Vector3f &n, const Point2f &sample,
+                      Float *pdf, bool *has_derivatives,
                       BxDFType *sampledType) const;
     Float Pdf(const Vector3f &wo, const Vector3f &wi, const Vector3f &n) const {
         return 0;
@@ -426,7 +456,7 @@ class LambertianTransmission : public BxDF {
         : BxDF(BxDFType(BSDF_TRANSMISSION | BSDF_DIFFUSE)), T(T) {}
     Spectrum f(const Vector3f &wo, const Vector3f &wi) const;
     Spectrum rho(const Vector3f &, const Vector3f &, const Vector3f &, int,
-                 const Point2f *) const { 
+                 const Point2f *) const {
         return T;
     }
     Spectrum rho(const Vector3f &, int, const Point2f *, const Vector3f &,
