@@ -371,9 +371,9 @@ bool Triangle::Intersect(const Ray &ray, Float *tHit, SurfaceInteraction *isect,
             ss = isect->dpdu;
 
         // Compute shading bitangent _ts_ for triangle and adjust _ss_
-        Vector3f ts = Cross(ss, ns);
+        Vector3f ts = Faceforward(Cross(ss, ns), isect->dpdv);
         if (ts.LengthSquared() > 0.f) {
-            ss = Cross(ts, ns);
+            ss = Faceforward(Cross(ts, ns), isect->dpdu);
         } else
             CoordinateSystem((Vector3f)ns, &ss, &ts);
 
