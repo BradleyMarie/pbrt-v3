@@ -50,11 +50,12 @@ void UberMaterial::ComputeScatteringFunctions(SurfaceInteraction *si,
     if (bumpMap) Bump(bumpMap, si);
     Float e = eta->Evaluate(*si);
 
-    Spectrum op = opacity->Evaluate(*si).Clamp();
-    Spectrum t = (-op + Spectrum(1.f)).Clamp();
-    if (!t.IsBlack()) {
+    Float op = Clamp(opacity->Evaluate(*si), 0.f, 1.f);
+    Float t = (1.f - op);
+    if (t != 0.f) {
+        Spectrum ts(t);
         si->bsdf = ARENA_ALLOC(arena, BSDF)(*si, 1.f);
-        BxDF *tr = ARENA_ALLOC(arena, SpecularTransmission)(t, 1.f, 1.f, mode);
+        BxDF *tr = ARENA_ALLOC(arena, SpecularTransmission)(ts, 1.f, 1.f, mode);
         si->bsdf->Add(tr);
     } else
         si->bsdf = ARENA_ALLOC(arena, BSDF)(*si, e);
@@ -117,8 +118,8 @@ UberMaterial *CreateUberMaterial(const TextureParams &mp) {
         mp.GetFloatTextureOrNull("vroughness");
     std::shared_ptr<Texture<Float>> eta = mp.GetFloatTextureOrNull("eta");
     if (!eta) eta = mp.GetFloatTexture("index", 1.5f);
-    std::shared_ptr<Texture<Spectrum>> opacity =
-        mp.GetSpectrumTexture("opacity", 1.f);
+    std::shared_ptr<Texture<Float>> opacity =
+        mp.GetFloatTexture("opacity", 1.f);
     std::shared_ptr<Texture<Float>> bumpMap =
         mp.GetFloatTextureOrNull("bumpmap");
     bool remapRoughness = mp.FindBool("remaproughness", true);

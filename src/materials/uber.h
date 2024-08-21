@@ -54,7 +54,7 @@ class UberMaterial : public Material {
                  const std::shared_ptr<Texture<Float>> &roughness,
                  const std::shared_ptr<Texture<Float>> &roughnessu,
                  const std::shared_ptr<Texture<Float>> &roughnessv,
-                 const std::shared_ptr<Texture<Spectrum>> &opacity,
+                 const std::shared_ptr<Texture<Float>> &opacity,
                  const std::shared_ptr<Texture<Float>> &eta,
                  const std::shared_ptr<Texture<Float>> &bumpMap,
                  bool remapRoughness)
@@ -76,9 +76,9 @@ class UberMaterial : public Material {
 
   private:
     // UberMaterial Private Data
-    std::shared_ptr<Texture<Spectrum>> Kd, Ks, Kr, Kt, opacity;
-    std::shared_ptr<Texture<Float>> roughness, roughnessu, roughnessv, eta,
-        bumpMap;
+    std::shared_ptr<Texture<Spectrum>> Kd, Ks, Kr, Kt;
+    std::shared_ptr<Texture<Float>> opacity, roughness, roughnessu, roughnessv,
+        eta, bumpMap;
     bool remapRoughness;
 };
 
