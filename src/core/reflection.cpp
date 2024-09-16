@@ -111,8 +111,8 @@ Spectrum ScaledBxDF::Sample_f(const Vector3f &wo, const Vector3f &wo_rx,
                               const Vector3f &n, const Point2f &sample,
                               Float *pdf, bool *has_derivatives,
                               BxDFType *sampledType) const {
-    Spectrum f = Sample_f(wo, wo_rx, wo_ry, wi, wi_rx, wi_ry, n, sample, pdf,
-                          has_derivatives, sampledType);
+    Spectrum f = bxdf->Sample_f(wo, wo_rx, wo_ry, wi, wi_rx, wi_ry, n, sample,
+                                pdf, has_derivatives, sampledType);
     return scale * f;
 }
 
