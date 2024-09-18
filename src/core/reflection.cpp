@@ -338,6 +338,7 @@ Spectrum FresnelBlend::f(const Vector3f &wo, const Vector3f &wi) const {
     Spectrum diffuse = (28.f / (23.f * Pi)) * Rd * (Spectrum(1.f) - Rs) *
                        (1 - pow5(1 - .5f * AbsCosTheta(wi))) *
                        (1 - pow5(1 - .5f * AbsCosTheta(wo)));
+    if (!SameHemisphere(wo, wi)) return diffuse;
     Vector3f wh = wi + wo;
     if (wh.x == 0 && wh.y == 0 && wh.z == 0) return Spectrum(0);
     wh = Normalize(wh);
@@ -530,12 +531,12 @@ Spectrum FresnelBlend::Sample_f(const Vector3f &wo, Vector3f *wi,
         // Cosine-sample the hemisphere, flipping the direction if necessary
         *wi = CosineSampleHemisphere(u);
         if (wo.z < 0) wi->z *= -1;
+        if (Dot(wo, n) * Dot(*wi, n) < 0) *wi = -*wi;
     } else {
         u[0] = std::min(2 * (u[0] - .5f), OneMinusEpsilon);
         // Sample microfacet orientation $\wh$ and reflected direction $\wi$
         Vector3f wh = distribution->Sample_wh(wo, u);
         *wi = Reflect(wo, wh);
-        if (!SameHemisphere(wo, *wi)) return Spectrum(0.f);
     }
     *pdf = Pdf(wo, *wi, n);
     return f(wo, *wi);
@@ -543,10 +544,11 @@ Spectrum FresnelBlend::Sample_f(const Vector3f &wo, Vector3f *wi,
 
 Float FresnelBlend::Pdf(const Vector3f &wo, const Vector3f &wi,
                         const Vector3f &n) const {
-    if (!SameHemisphere(wo, wi)) return 0;
+    Float diffuse = (Dot(wo, n) * Dot(wi, n) > 0) ? AbsCosTheta(wi) * InvPi : 0;
+    if (!SameHemisphere(wo, wi)) return .5f * diffuse;
     Vector3f wh = Normalize(wo + wi);
     Float pdf_wh = distribution->Pdf(wo, wh);
-    return .5f * (AbsCosTheta(wi) * InvPi + pdf_wh / (4 * Dot(wo, wh)));
+    return .5f * (diffuse + pdf_wh / (4 * Dot(wo, wh)));
 }
 
 Spectrum FresnelSpecular::Sample_f(const Vector3f &wo, Vector3f *wi,
