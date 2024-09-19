@@ -48,8 +48,9 @@ void MixMaterial::ComputeScatteringFunctions(SurfaceInteraction *si,
                                              TransportMode mode,
                                              bool allowMultipleLobes) const {
     // Compute weights and original _BxDF_s for mix material
-    Spectrum s1 = scale->Evaluate(*si).Clamp();
-    Spectrum s2 = (Spectrum(1.f) - s1).Clamp();
+    Float s = scale->Evaluate(*si);
+    Spectrum s1 = Spectrum(s).Clamp();
+    Spectrum s2 = Spectrum(1.f - s).Clamp();
     SurfaceInteraction si2 = *si;
     m1->ComputeScatteringFunctions(si, arena, mode, allowMultipleLobes);
     m2->ComputeScatteringFunctions(&si2, arena, mode, allowMultipleLobes);
@@ -66,8 +67,8 @@ void MixMaterial::ComputeScatteringFunctions(SurfaceInteraction *si,
 MixMaterial *CreateMixMaterial(const TextureParams &mp,
                                const std::shared_ptr<Material> &m1,
                                const std::shared_ptr<Material> &m2) {
-    std::shared_ptr<Texture<Spectrum>> scale =
-        mp.GetSpectrumTexture("amount", Spectrum(0.5f));
+    std::shared_ptr<Texture<Float>> scale =
+        mp.GetFloatTexture("amount", 0.5f);
     return new MixMaterial(m1, m2, scale);
 }
 

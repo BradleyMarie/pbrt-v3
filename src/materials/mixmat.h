@@ -50,7 +50,7 @@ class MixMaterial : public Material {
     // MixMaterial Public Methods
     MixMaterial(const std::shared_ptr<Material> &m1,
                 const std::shared_ptr<Material> &m2,
-                const std::shared_ptr<Texture<Spectrum>> &scale)
+                const std::shared_ptr<Texture<Float>> &scale)
         : m1(m1), m2(m2), scale(scale) {}
     void ComputeScatteringFunctions(SurfaceInteraction *si, MemoryArena &arena,
                                     TransportMode mode,
@@ -59,7 +59,7 @@ class MixMaterial : public Material {
   private:
     // MixMaterial Private Data
     std::shared_ptr<Material> m1, m2;
-    std::shared_ptr<Texture<Spectrum>> scale;
+    std::shared_ptr<Texture<Float>> scale;
 };
 
 MixMaterial *CreateMixMaterial(const TextureParams &mp,
