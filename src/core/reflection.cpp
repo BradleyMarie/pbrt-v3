@@ -270,6 +270,8 @@ std::string OrenNayar::ToString() const {
 }
 
 Spectrum MicrofacetReflection::f(const Vector3f &wo, const Vector3f &wi) const {
+    if (!SameHemisphere(wo, wi)) return 0;  // reflection only
+
     Float cosThetaO = AbsCosTheta(wo), cosThetaI = AbsCosTheta(wi);
     Vector3f wh = wi + wo;
     // Handle degenerate cases for microfacet reflection
@@ -876,11 +878,20 @@ Spectrum BSDF::Sample_f(const Vector3f &woWorld, const Vector3f &woWorldRx,
         *wiWorldRy = LocalToWorld(wi_ry);
     }
 
+    bool reflect = Dot(*wiWorld, ng) * Dot(woWorld, ng) > 0;
+
     // Compute overall PDF with all matching _BxDF_s
-    if (!(bxdf->type & BSDF_SPECULAR) && matchingComps > 1)
+    if (!(bxdf->type & BSDF_SPECULAR)) {
+        *pdf = 0;
+        matchingComps = 0;
         for (int i = 0; i < nBxDFs; ++i)
-            if (bxdfs[i] != bxdf && bxdfs[i]->MatchesFlags(type))
-                *pdf += bxdfs[i]->Pdf(wo, wi, n);
+            if (bxdfs[i]->MatchesFlags(type) &&
+                ((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
+                 (!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
+                    ++matchingComps;
+                    *pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
+                 }
+    }
     if (matchingComps > 1) *pdf /= matchingComps;
 
     // Compute value of BSDF for sampled direction
@@ -907,10 +918,13 @@ Float BSDF::Pdf(const Vector3f &woWorld, const Vector3f &wiWorld,
     if (wo.z == 0) return 0.;
     Float pdf = 0.f;
     int matchingComps = 0;
+    bool reflect = Dot(wiWorld, ng) * Dot(woWorld, ng) > 0;
     for (int i = 0; i < nBxDFs; ++i)
-        if (bxdfs[i]->MatchesFlags(flags)) {
+        if (bxdfs[i]->MatchesFlags(flags) &&
+            ((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
+             (!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
             ++matchingComps;
-            pdf += bxdfs[i]->Pdf(wo, wi, n);
+            pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
         }
     Float v = matchingComps > 0 ? pdf / matchingComps : 0.f;
     return v;
