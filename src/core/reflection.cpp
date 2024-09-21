@@ -883,12 +883,10 @@ Spectrum BSDF::Sample_f(const Vector3f &woWorld, const Vector3f &woWorldRx,
     // Compute overall PDF with all matching _BxDF_s
     if (!(bxdf->type & BSDF_SPECULAR)) {
         *pdf = 0;
-        matchingComps = 0;
         for (int i = 0; i < nBxDFs; ++i)
             if (bxdfs[i]->MatchesFlags(type) &&
                 ((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
                  (!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
-                    ++matchingComps;
                     *pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
                  }
     }
@@ -917,13 +915,12 @@ Float BSDF::Pdf(const Vector3f &woWorld, const Vector3f &wiWorld,
     Vector3f n = WorldToLocal(Vector3f(ng));
     if (wo.z == 0) return 0.;
     Float pdf = 0.f;
-    int matchingComps = 0;
+    int matchingComps = NumComponents(flags);
     bool reflect = Dot(wiWorld, ng) * Dot(woWorld, ng) > 0;
     for (int i = 0; i < nBxDFs; ++i)
         if (bxdfs[i]->MatchesFlags(flags) &&
             ((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
              (!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
-            ++matchingComps;
             pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
         }
     Float v = matchingComps > 0 ? pdf / matchingComps : 0.f;
