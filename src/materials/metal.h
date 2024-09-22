@@ -49,8 +49,8 @@ namespace pbrt {
 class MetalMaterial : public Material {
   public:
     // MetalMaterial Public Methods
-    MetalMaterial(const std::shared_ptr<Texture<Spectrum>> &eta,
-                  const std::shared_ptr<Texture<Spectrum>> &k,
+    MetalMaterial(const Spectrum &eta,
+                  const Spectrum &k,
                   const std::shared_ptr<Texture<Float>> &rough,
                   const std::shared_ptr<Texture<Float>> &urough,
                   const std::shared_ptr<Texture<Float>> &vrough,
@@ -62,7 +62,7 @@ class MetalMaterial : public Material {
 
   private:
     // MetalMaterial Private Data
-    std::shared_ptr<Texture<Spectrum>> eta, k;
+    Spectrum eta, k;
     std::shared_ptr<Texture<Float>> roughness, uRoughness, vRoughness;
     std::shared_ptr<Texture<Float>> bumpMap;
     bool remapRoughness;

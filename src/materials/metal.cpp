@@ -41,8 +41,8 @@
 namespace pbrt {
 
 // MetalMaterial Method Definitions
-MetalMaterial::MetalMaterial(const std::shared_ptr<Texture<Spectrum>> &eta,
-                             const std::shared_ptr<Texture<Spectrum>> &k,
+MetalMaterial::MetalMaterial(const Spectrum &eta,
+                             const Spectrum &k,
                              const std::shared_ptr<Texture<Float>> &roughness,
                              const std::shared_ptr<Texture<Float>> &uRoughness,
                              const std::shared_ptr<Texture<Float>> &vRoughness,
@@ -72,8 +72,7 @@ void MetalMaterial::ComputeScatteringFunctions(SurfaceInteraction *si,
         uRough = TrowbridgeReitzDistribution::RoughnessToAlpha(uRough);
         vRough = TrowbridgeReitzDistribution::RoughnessToAlpha(vRough);
     }
-    Fresnel *frMf = ARENA_ALLOC(arena, FresnelConductor)(1., eta->Evaluate(*si),
-                                                         k->Evaluate(*si));
+    Fresnel *frMf = ARENA_ALLOC(arena, FresnelConductor)(1., eta, k);
     MicrofacetDistribution *distrib =
         ARENA_ALLOC(arena, TrowbridgeReitzDistribution)(uRough, vRough);
     si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(1., distrib, frMf));
@@ -115,11 +114,10 @@ const Float CopperK[CopperSamples] = {
 MetalMaterial *CreateMetalMaterial(const TextureParams &mp) {
     static Spectrum copperN =
         Spectrum::FromSampled(CopperWavelengths, CopperN, CopperSamples);
-    std::shared_ptr<Texture<Spectrum>> eta =
-        mp.GetSpectrumTexture("eta", copperN);
+    Spectrum eta = mp.FindSpectrum("eta", copperN);
     static Spectrum copperK =
         Spectrum::FromSampled(CopperWavelengths, CopperK, CopperSamples);
-    std::shared_ptr<Texture<Spectrum>> k = mp.GetSpectrumTexture("k", copperK);
+    Spectrum k = mp.FindSpectrum("k", copperK);
     std::shared_ptr<Texture<Float>> roughness =
         mp.GetFloatTexture("roughness", .01f);
     std::shared_ptr<Texture<Float>> uRoughness =
