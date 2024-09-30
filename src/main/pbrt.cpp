@@ -38,6 +38,10 @@
 #include "parallel.h"
 #include <glog/logging.h>
 
+#ifdef _XOPEN_SOURCE
+#include <unistd.h>
+#endif
+
 using namespace pbrt;
 
 static void usage(const char *msg = nullptr) {
@@ -76,6 +80,12 @@ Reformatting options:
 int main(int argc, char *argv[]) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_stderrthreshold = 1; // Warning and above.
+
+#ifdef _XOPEN_SOURCE
+    if (nice(19) == -1) {
+        printf("WARNING: Failed to adjust the niceness of the process\n");
+    }
+#endif
 
     Options options;
     std::vector<std::string> filenames;
