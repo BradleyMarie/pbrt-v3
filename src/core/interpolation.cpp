@@ -64,7 +64,16 @@ bool CatmullRomWeights(int size, const Float *nodes, Float x, int *offset,
     if (!(x >= nodes[0] && x <= nodes[size - 1])) return false;
 
     // Search for the interval _idx_ containing _x_
-    int idx = FindInterval(size, [&](int i) { return nodes[i] <= x; });
+    const Float* iterator = std::lower_bound(nodes, nodes + size, x);
+    if (iterator == nodes + size) {
+        return false;
+    }
+
+    int idx = iterator - nodes;
+    if (*iterator != x) {
+        idx -= 1;
+    }
+
     *offset = idx - 1;
     Float x0 = nodes[idx], x1 = nodes[idx + 1];
 
@@ -76,7 +85,7 @@ bool CatmullRomWeights(int size, const Float *nodes, Float x, int *offset,
     weights[2] = -2 * t3 + 3 * t2;
 
     // Compute first node weight $w_0$
-    if (idx > 0) {
+    if (idx > 0 && nodes[idx - 1] != x0) {
         Float w0 = (t3 - 2 * t2 + t) * (x1 - x0) / (x1 - nodes[idx - 1]);
         weights[0] = -w0;
         weights[2] += w0;
@@ -88,7 +97,7 @@ bool CatmullRomWeights(int size, const Float *nodes, Float x, int *offset,
     }
 
     // Compute last node weight $w_3$
-    if (idx + 2 < size) {
+    if (idx + 2 < size && nodes[idx + 2] != x1) {
         Float w3 = (t3 - t2) * (x1 - x0) / (nodes[idx + 2] - x0);
         weights[1] -= w3;
         weights[3] = w3;

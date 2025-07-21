@@ -364,6 +364,9 @@ Spectrum FourierBSDF::f(const Vector3f &wo, const Vector3f &wi) const {
     Float cosPhi = CosDPhi(-wi, wo);
 
     // Compute Fourier coefficients $a_k$ for $(\mui, \muo)$
+    if (muI == 0.0 || muO == 0.0) {
+        return Spectrum(0.f);
+    }
 
     // Determine offsets and weights for $\mui$ and $\muo$
     int offsetI, offsetO;
