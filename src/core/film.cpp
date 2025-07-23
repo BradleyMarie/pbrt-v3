@@ -226,7 +226,7 @@ Film *CreateFilm(const ParamSet &params, std::unique_ptr<Filter> filter) {
                 PbrtOptions.imageFile.c_str(), paramsFilename.c_str());
     } else
         filename = params.FindOneString("filename", "pbrt.exr");
-
+    filename = "ref-" + filename;
     int xres = params.FindOneInt("xresolution", 1280);
     int yres = params.FindOneInt("yresolution", 720);
     if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
