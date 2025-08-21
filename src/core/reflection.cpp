@@ -485,7 +485,7 @@ Spectrum MicrofacetReflection::Sample_f(const Vector3f &wo, Vector3f *wi,
     if (!SameHemisphere(wo, *wi)) return Spectrum(0.f);
 
     // Compute PDF of _wi_ for microfacet reflection
-    *pdf = distribution->Pdf(wo, wh) / (4 * Dot(wo, wh));
+    *pdf = Pdf(wo, *wi, n);
     return f(wo, *wi);
 }
 
@@ -871,7 +871,7 @@ Spectrum BSDF::Sample_f(const Vector3f &woWorld, const Vector3f &woWorldRx,
     VLOG(2) << "For wo = " << wo << ", sampled f = " << f << ", pdf = "
             << *pdf << ", ratio = " << ((*pdf > 0) ? (f / *pdf) : Spectrum(0.))
             << ", wi = " << wi;
-    if (*pdf == 0) {
+    if (*pdf <= 0) {
         if (sampledType) *sampledType = BxDFType(0);
         return 0;
     }
@@ -887,11 +887,9 @@ Spectrum BSDF::Sample_f(const Vector3f &woWorld, const Vector3f &woWorldRx,
     if (!(bxdf->type & BSDF_SPECULAR)) {
         *pdf = 0;
         for (int i = 0; i < nBxDFs; ++i)
-            if (bxdfs[i]->MatchesFlags(type) &&
-                ((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
-                 (!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
-                    *pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
-                 }
+            // Unlike the computation for f, this should not consider reflect
+            if (bxdfs[i]->MatchesFlags(type))
+                *pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
     }
     if (matchingComps > 1) *pdf /= matchingComps;
 
@@ -919,11 +917,8 @@ Float BSDF::Pdf(const Vector3f &woWorld, const Vector3f &wiWorld,
     if (wo.z == 0) return 0.;
     Float pdf = 0.f;
     int matchingComps = NumComponents(flags);
-    bool reflect = Dot(wiWorld, ng) * Dot(woWorld, ng) > 0;
     for (int i = 0; i < nBxDFs; ++i)
-        if (bxdfs[i]->MatchesFlags(flags) &&
-            ((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
-             (!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
+        if (bxdfs[i]->MatchesFlags(flags)) {
             pdf += std::max(0.f, bxdfs[i]->Pdf(wo, wi, n));
         }
     Float v = matchingComps > 0 ? pdf / matchingComps : 0.f;
