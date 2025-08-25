@@ -102,8 +102,8 @@ class Triangle : public Shape {
             uv[2] = mesh->uv[v[2]];
         } else {
             uv[0] = Point2f(0, 0);
-            uv[1] = Point2f(1, 0);
-            uv[2] = Point2f(1, 1);
+            uv[1] = Point2f(0, 0);
+            uv[2] = Point2f(0, 0);
         }
     }
 
